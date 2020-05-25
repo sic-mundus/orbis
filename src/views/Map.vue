@@ -1,26 +1,49 @@
 <template>
   <div class="wrapper">
-    <v-btn @click="changeCenter">Change Center</v-btn>
-    <v-btn @click="changeZoom">Change Zoom</v-btn>
-    <v-btn @click="fitBounds">Fit to bounds</v-btn>
-    <GmapMap
-      ref="mapRef"
-      :options="mapOptions"
-      :center="center"
-      :zoom="zoom"
-      style="width: 100%; height: 100%"
-    >
-      <gmap-cluster>
-        <GmapMarker
-          :key="index"
-          v-for="(m, index) in markers"
-          :position="m.position"
-          :clickable="true"
-          :draggable="true"
-          @click="center=m.position"
-        />
-      </gmap-cluster>
-    </GmapMap>
+    <v-container fluid class="fill-height">
+      <v-row>
+        <v-col>
+          <v-btn @click="changeCenter">Change Center</v-btn>
+        </v-col>
+        <v-col>
+          <v-btn @click="changeZoom">Change Zoom</v-btn>
+        </v-col>
+        <v-col>
+          <v-btn @click="fitBounds">Fit to bounds</v-btn>
+        </v-col>
+        <v-col cols="12">
+          <gmap-autocomplete
+            :value="description"
+            placeholder="This is a placeholder text"
+            @place_changed="setPlace"
+            :select-first-on-enter="true"
+          ></gmap-autocomplete>
+        </v-col>
+      </v-row>
+
+      <v-row style="height:100%">
+        <v-col cols="12">
+          <GmapMap
+            ref="mapRef"
+            :options="mapOptions"
+            :center="center"
+            :zoom="zoom"
+            style="width: 100%; height: 100%"
+          >
+            <gmap-cluster>
+              <GmapMarker
+                :key="index"
+                v-for="(m, index) in markers"
+                :position="m.position"
+                :clickable="true"
+                :draggable="true"
+                @click="center=m.position"
+              />
+            </gmap-cluster>
+          </GmapMap>
+        </v-col>
+      </v-row>
+    </v-container>
   </div>
 </template>
 
@@ -31,7 +54,7 @@ export default {
   data: () => ({
     mapOptions: {
       zoomControl: true,
-      mapTypeControl: false,
+      mapTypeControl: true,
       scaleControl: false,
       streetViewControl: false,
       rotateControl: false,
@@ -65,7 +88,8 @@ export default {
       lat: 42,
       lng: 10
     },
-    zoom: 7
+    zoom: 7,
+    description: ""
   }),
   computed: {
     google: gmapApi
@@ -102,6 +126,33 @@ export default {
 
     changeZoom() {
       this.zoom = Math.floor(5 + Math.random() * 10);
+    },
+
+    setPlace(place) {
+      if (!place) return;
+
+      let p = {
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng()
+      };
+
+      let mk = {
+        name: "Pirulino trovato!",
+        position: {
+          lat: p.lat,
+          lng: p.lng
+        }
+      };
+
+      this.markers.push(mk);
+
+      this.center = mk.position;
+
+      let zService = new this.google.maps.MaxZoomService();
+      zService.getMaxZoomAtLatLng(mk.position, z => {
+        console.debug("The maximum zoom available here is", z);
+        this.zoom = z.zoom;
+      });
     }
   }
 };
